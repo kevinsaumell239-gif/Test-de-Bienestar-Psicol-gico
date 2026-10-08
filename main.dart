@@ -10,7 +10,7 @@ class TestPsicologicoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Test de Resiliencia',
+      title: 'Test de Bienestar Emocional y Social',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -52,10 +52,10 @@ class PantallaBienvenida extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.psychology, size: 100, color: Colors.white),
+            const Icon(Icons.psychology_alt, size: 100, color: Colors.white),
             const SizedBox(height: 20),
             const Text(
-              "Evaluación de Bienestar",
+              "Evaluación de Bienestar Emocional y Social",
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const Padding(
@@ -99,26 +99,26 @@ class _PantallaTestState extends State<PantallaTest> {
   List<int> respuestas = [];
 
   final List<String> preguntas = [
-    "Logro mantener la calma y la estabilidad emocional ante los cambios imprevistos.",
-    "Me siento capaz de gestionar mis emociones de manera constructiva.",
-    "Disfruto de actividades cotidianas que me brindan paz.",
-    "Mantengo un interés activo por las actividades que realizo.",
-    "Poseo la capacidad de recuperar mi equilibrio emocional.",
-    "Siento que cuento con una red de apoyo (amigos/familia).",
-    "Mis relaciones interpersonales me hacen sentir parte de un grupo.",
-    "Encuentro apoyo en mi entorno para expresar sentimientos.",
-    "Siento una conexión positiva con las personas que me rodean.",
-    "Tengo personas de confianza ante cualquier dificultad.",
-    "Encuentro formas creativas de resolver necesidades.",
-    "Me siento capaz de organizar mis proyectos con dificultades.",
-    "Utilizo los recursos a mano de manera efectiva.",
-    "Percibo capacidad de adaptarme con resiliencia.",
-    "Logro mantener una rutina funcional.",
-    "Tengo metas claras que me motivan.",
-    "Mantengo una visión optimista de mi crecimiento.",
-    "Me siento con energía para trabajar por mi futuro.",
-    "Visualizo oportunidades de progreso a largo plazo.",
-    "Siento que mis esfuerzos tienen un propósito valioso.",
+    "Logro mantener la calma y la estabilidad emocional ante los cambios imprevistos del día.",
+    "Me siento capaz de gestionar mis emociones de manera constructiva cuando surgen conflictos.",
+    "Disfruto de actividades cotidianas que me brindan una sensación de paz y satisfacción.",
+    "Mantengo un interés activo y entusiasta por las actividades que realizo.",
+    "Poseo la capacidad de recuperar mi equilibrio emocional tras un momento de tensión.",
+    "Siento que cuento con una red de amigos o familiares que me comprenden profundamente.",
+    "Mis relaciones interpersonales me hacen sentir parte de un grupo o comunidad.",
+    "Tengo personas de confianza en quienes puedo apoyarme ante cualquier dificultad.",
+    "Siento que mi familia me brinda un ambiente de aceptación.",
+    "Mis amigos me motivan a ser una mejor persona.",
+    "Encuentro formas creativas de resolver mis necesidades a pesar de las limitaciones de servicios (agua, electricidad, etc.).",
+    "Me siento capaz de organizar mis estudios o proyectos aun con las dificultades del entorno.",
+    "Soy capaz de administrar mis recursos (dinero, comida, tiempo) con éxito.",
+    "Puedo ajustar mis planes cuando surgen imprevistos en los servicios.",
+    "Me siento capaz de lidiar con la incertidumbre del día a día.",
+    "Tengo metas claras que me motivan a seguir adelante cada día.",
+    "Me siento con la energía necesaria para trabajar por el futuro que deseo construir.",
+    "Siento que mis esfuerzos actuales tienen un propósito valioso para mi futuro.",
+    "Creo que mi esfuerzo actual dará frutos en el futuro.",
+    "Veo un camino posible para alcanzar la estabilidad que deseo.",
   ];
 
   final List<String> escalaTexto = ["Nunca", "Rara vez", "A veces", "Frecuentemente", "Siempre"];
@@ -253,11 +253,11 @@ class PantallaResultados extends StatelessWidget {
                 style: TextStyle(fontSize: 18, color: colorDiag, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 30),
-            const Text("Desglose por Áreas:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text("Desglose por Esferas:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             _itemResultado("Bienestar Emocional", sA),
             _itemResultado("Apoyo Social", sB),
-            _itemResultado("Adaptación Contexto", sC),
+            _itemResultado("Adaptación al Contexto", sC),
             _itemResultado("Proyección Futuro", sD),
             const SizedBox(height: 30),
             ElevatedButton(

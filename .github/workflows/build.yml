@@ -8,10 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Descargar codigo del repositorio
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Instalar Java (Requerido para Android)
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -32,7 +32,7 @@ jobs:
           flutter build apk --release
 
       - name: Subir APK terminada
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: MiApp-APK
           path: mi_app/build/app/outputs/flutter-apk/app-release.apk

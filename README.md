@@ -1,1 +1,1 @@
-# Test-de-Bienestar-Psicol-gico
+# Test-de-Bienestar-Psicologico

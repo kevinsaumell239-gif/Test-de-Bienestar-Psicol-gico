@@ -1,0 +1,38 @@
+name: Compilar APK
+
+on:
+  workflow_dispatch: # Permite iniciar la compilación con un solo clic
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar codigo del repositorio
+        uses: actions/checkout@v3
+
+      - name: Instalar Java (Requerido para Android)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Crear estructura de proyecto y reemplazar codigo
+        run: |
+          flutter create mi_app
+          cp main.dart mi_app/lib/main.dart
+
+      - name: Compilar APK en Release
+        run: |
+          cd mi_app
+          flutter build apk --release
+
+      - name: Subir APK terminada
+        uses: actions/upload-artifact@v3
+        with:
+          name: MiApp-APK
+          path: mi_app/build/app/outputs/flutter-apk/app-release.apk

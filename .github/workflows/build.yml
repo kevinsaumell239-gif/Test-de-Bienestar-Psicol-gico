@@ -1,7 +1,7 @@
-name: Compilar APK
+name: Compilar y Firmar APK
 
 on:
-  workflow_dispatch: # Permite iniciar la compilación con un solo clic
+  workflow_dispatch:
 
 jobs:
   build:
@@ -10,7 +10,7 @@ jobs:
       - name: Descargar codigo del repositorio
         uses: actions/checkout@v4
 
-      - name: Instalar Java (Requerido para Android)
+      - name: Instalar Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -21,18 +21,39 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Crear estructura de proyecto y reemplazar codigo
+      - name: Crear proyecto y configurar nombre visible
         run: |
-          flutter create mi_app
+          flutter create --org com.bienestar --project-name test_bienestar mi_app
           cp main.dart mi_app/lib/main.dart
+          # Cambiar nombre visible en la pantalla de Android
+          sed -i 's/android:label="mi_app"/android:label="Test de Bienestar"/g' mi_app/android/app/src/main/AndroidManifest.xml
 
       - name: Compilar APK en Release
         run: |
           cd mi_app
           flutter build apk --release
 
-      - name: Subir APK terminada
+      - name: Generar Keystore y Firmar APK con apksigner oficial
+        run: |
+          # 1. Crear el certificado formal de lanzamiento
+          keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias bienestar -storepass MiPasswordSeguro123 -keypass MiPasswordSeguro123 \
+            -dname "CN=Kevin Saumell, OU=Psicologia, O=Bienestar, L=La Habana, C=CU"
+
+          # 2. Firmar el APK con apksigner oficial (Android v2 y v3 signature)
+          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+            --ks release.jks \
+            --ks-key-alias bienestar \
+            --ks-pass pass:MiPasswordSeguro123 \
+            --key-pass pass:MiPasswordSeguro123 \
+            --out mi_app/build/app/outputs/flutter-apk/TestDeBienestar-Firmada.apk \
+            mi_app/build/app/outputs/flutter-apk/app-release.apk
+
+          # 3. Verificar validez de la firma
+          $ANDROID_HOME/build-tools/34.0.0/apksigner verify mi_app/build/app/outputs/flutter-apk/TestDeBienestar-Firmada.apk
+
+      - name: Subir APK Firmada
         uses: actions/upload-artifact@v4
         with:
-          name: MiApp-APK
-          path: mi_app/build/app/outputs/flutter-apk/app-release.apk
+          name: TestDeBienestar-Firmada
+          path: mi_app/build/app/outputs/flutter-apk/TestDeBienestar-Firmada.apk

@@ -21,14 +21,14 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Crear proyecto y configurar nombre visible
+      - name: Crear proyecto y configurar nombre
         run: |
           flutter create --org com.bienestar --project-name test_bienestar mi_app
           cp main.dart mi_app/lib/main.dart
-          # Cambiar nombre visible en la pantalla de Android
+          # Cambiar nombre visible en pantalla
           sed -i 's/android:label="mi_app"/android:label="Test de Bienestar"/g' mi_app/android/app/src/main/AndroidManifest.xml
 
-      - name: Compilar APK en Release
+      - name: Compilar APK en Release (sin firmar)
         run: |
           cd mi_app
           flutter build apk --release
@@ -40,7 +40,7 @@ jobs:
             -alias bienestar -storepass MiPasswordSeguro123 -keypass MiPasswordSeguro123 \
             -dname "CN=Kevin Saumell, OU=Psicologia, O=Bienestar, L=La Habana, C=CU"
 
-          # 2. Firmar el APK con apksigner oficial (Android v2 y v3 signature)
+          # 2. Firmar el APK con apksigner (Android SDK v2 y v3 signature)
           $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
             --ks release.jks \
             --ks-key-alias bienestar \
@@ -49,7 +49,7 @@ jobs:
             --out mi_app/build/app/outputs/flutter-apk/TestDeBienestar-Firmada.apk \
             mi_app/build/app/outputs/flutter-apk/app-release.apk
 
-          # 3. Verificar validez de la firma
+          # 3. Verificar que la firma es valida para Android
           $ANDROID_HOME/build-tools/34.0.0/apksigner verify mi_app/build/app/outputs/flutter-apk/TestDeBienestar-Firmada.apk
 
       - name: Subir APK Firmada

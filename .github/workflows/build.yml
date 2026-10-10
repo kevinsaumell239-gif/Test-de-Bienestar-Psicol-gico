@@ -28,6 +28,30 @@ jobs:
           # Cambiar nombre visible en pantalla
           sed -i 's/android:label="mi_app"/android:label="Test de Bienestar"/g' mi_app/android/app/src/main/AndroidManifest.xml
 
+      - name: Configurar Icono Personalizado
+        run: |
+          cd mi_app
+          # 1. Crear carpeta de recursos y copiar la imagen
+          mkdir -p assets
+          cp ../app_icon.png assets/icon.png
+
+          # 2. Agregar configuracion al archivo pubspec.yaml
+          cat <<EOT >> pubspec.yaml
+
+          dev_dependencies:
+            flutter_launcher_icons: "^0.13.1"
+
+          flutter_launcher_icons:
+            android: "launcher_icon"
+            ios: true
+            image_path: "assets/icon.png"
+            min_sdk_android: 21
+          EOT
+
+          # 3. Descargar paquete y generar automaticamente los iconos
+          flutter pub get
+          dart run flutter_launcher_icons
+
       - name: Compilar APK en Release (sin firmar)
         run: |
           cd mi_app
@@ -49,7 +73,7 @@ jobs:
             --out mi_app/build/app/outputs/flutter-apk/TestDeBienestar-Firmada.apk \
             mi_app/build/app/outputs/flutter-apk/app-release.apk
 
-          # 3. Verificar que la firma es valida para Android
+          # 3. Verificar validez de la firma
           $ANDROID_HOME/build-tools/34.0.0/apksigner verify mi_app/build/app/outputs/flutter-apk/TestDeBienestar-Firmada.apk
 
       - name: Subir APK Firmada

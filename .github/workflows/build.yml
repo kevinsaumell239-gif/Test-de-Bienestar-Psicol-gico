@@ -21,44 +21,22 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Crear proyecto y configurar nombre visible
+      - name: Crear proyecto e instalar dependencias
         run: |
           flutter create --org com.bienestar --project-name test_bienestar mi_app
           cp main.dart mi_app/lib/main.dart
           sed -i 's/android:label="mi_app"/android:label="Test de Bienestar"/g' mi_app/android/app/src/main/AndroidManifest.xml
-
-      - name: Configurar Icono Personalizado
-        run: |
+          
           cd mi_app
-          mkdir -p assets
-
-          # Buscar cualquier imagen que coincida con el nombre de icono
-          if [ -f "../app_icon.png" ]; then
-            cp ../app_icon.png assets/icon.png
-          elif [ -f "../app_icon.jpg" ]; then
-            cp ../app_icon.jpg assets/icon.png
-          elif [ -f "../app_icon.jpeg" ]; then
-            cp ../app_icon.jpeg assets/icon.png
-          fi
-
-          if [ -f "assets/icon.png" ]; then
-            echo "Imagen encontrada. Configurando iconos..."
-            flutter pub add --dev flutter_launcher_icons
-            
-            # Escribir la configuracion al final del pubspec
-            printf "\nflutter_launcher_icons:\n  android: \"launcher_icon\"\n  ios: true\n  image_path: \"assets/icon.png\"\n  min_sdk_android: 21\n" >> pubspec.yaml
-            
-            dart run flutter_launcher_icons || true
-          else
-            echo "Aviso: No se encontro app_icon.png en la raiz. Se usara el icono por defecto."
-          fi
+          # Instalar paquetes requeridos
+          flutter pub add http url_launcher
 
       - name: Compilar APK en Release
         run: |
           cd mi_app
           flutter build apk --release
 
-      - name: Generar Keystore y Firmar APK con apksigner oficial
+      - name: Generar Keystore y Firmar APK
         run: |
           keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 2048 -validity 10000 \
             -alias bienestar -storepass MiPasswordSeguro123 -keypass MiPasswordSeguro123 \
@@ -71,8 +49,6 @@ jobs:
             --key-pass pass:MiPasswordSeguro123 \
             --out mi_app/build/app/outputs/flutter-apk/TestDeBienestar-Firmada.apk \
             mi_app/build/app/outputs/flutter-apk/app-release.apk
-
-          $ANDROID_HOME/build-tools/34.0.0/apksigner verify mi_app/build/app/outputs/flutter-apk/TestDeBienestar-Firmada.apk
 
       - name: Subir APK Firmada
         uses: actions/upload-artifact@v4

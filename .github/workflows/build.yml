@@ -21,12 +21,17 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Crear proyecto e instalar dependencias
+      - name: Crear proyecto, configurar permisos de Internet y nombre
         run: |
           flutter create --org com.bienestar --project-name test_bienestar mi_app
           cp main.dart mi_app/lib/main.dart
+          
+          # 1. Cambiar nombre visible
           sed -i 's/android:label="mi_app"/android:label="Test de Bienestar"/g' mi_app/android/app/src/main/AndroidManifest.xml
           
+          # 2. Agregar Permiso de INTERNET a Android
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>' mi_app/android/app/src/main/AndroidManifest.xml
+
           cd mi_app
           # Instalar paquetes requeridos
           flutter pub add http url_launcher

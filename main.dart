@@ -1,4 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+
+// 🔴 COLOCA AQUÍ TU ENLACE DE GOOGLE APPS SCRIPT
+const String webhookGoogle = "https://script.google.com/macros/s/AKfycbw1ah4mIX7pOgdyj7t0mVTMBWULACaMh3PNIl4-2qs8VteWobQN5061DhvqAA1HijtDcA/exec";
 
 void main() {
   runApp(const TestPsicologicoApp());
@@ -10,7 +16,7 @@ class TestPsicologicoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Test de Bienestar Emocional y Social',
+      title: 'Test de Bienestar (EBES-JC)',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -24,18 +30,62 @@ class TestPsicologicoApp extends StatelessWidget {
   }
 }
 
-// --- LÓGICA DE NEGOCIO (MODELOS) ---
+// --- DATOS GEOGRÁFICOS DE CUBA ---
+final Map<String, List<String>> cubaGeo = {
+  "Pinar del Río": ["Consolación del Sur", "Guane", "La Palma", "Los Palacios", "Mantua", "Minas de Matahambre", "Pinar del Río", "San Juan y Martínez", "San Luis", "Sandino", "Viñales"],
+  "Artemisa": ["Alquízar", "Artemisa", "Bauta", "Caimito", "Guanajay", "Güira de Melena", "Mariel", "San Antonio de los Baños", "Bahía Honda", "San Cristóbal", "Candelaria"],
+  "La Habana": ["Arroyo Naranjo", "Boyeros", "Centro Habana", "Cerro", "Cotorro", "Diez de Octubre", "Guanabacoa", "La Habana del Este", "La Habana Vieja", "La Lisa", "Marianao", "Playa", "Plaza de la Revolución", "Regla", "San Miguel del Padrón"],
+  "Mayabeque": ["Batabanó", "Bejucal", "Güines", "Jaruco", "Madruga", "Melena del Sur", "Nueva Paz", "Quivicán", "San José de las Lajas", "San Nicolás", "Santa Cruz del Norte"],
+  "Matanzas": ["Calimete", "Cárdenas", "Ciénaga de Zapata", "Colón", "Jagüey Grande", "Jovellanos", "Limonar", "Los Arabos", "Martí", "Matanzas", "Pedro Betancourt", "Perico", "Unión de Reyes"],
+  "Cienfuegos": ["Abreus", "Aguada de Pasajeros", "Cruces", "Cumanayagua", "Lajas", "Palmira", "Rodas", "Cienfuegos"],
+  "Villa Clara": ["Caibarién", "Camajuaní", "Cifuentes", "Corralillo", "Encrucijada", "Manicaragua", "Placetas", "Quemado de Güines", "Ranchuelo", "San Juan de los Remedios", "Sagua la Grande", "Santa Clara", "Santo Domingo"],
+  "Sancti Spíritus": ["Cabaiguán", "Fomento", "Jatibonico", "La Sierpe", "Sancti Spíritus", "Taguasco", "Trinidad", "Yaguajay"],
+  "Ciego de Ávila": ["Baraguá", "Bolivia", "Chambas", "Ciego de Ávila", "Ciro Redondo", "Florencia", "Majagua", "Morón", "Primero de Enero", "Venezuela"],
+  "Camagüey": ["Camagüey", "Carlos Manuel de Céspedes", "Esmeralda", "Florida", "Guáimaro", "Jimaguayú", "Minas", "Najasa", "Nuevitas", "Santa Cruz del Sur", "Sibanicú", "Sierra de Cubitas", "Vertientes"],
+  "Las Tunas": ["Amancio", "Colombia", "Jesús Menéndez", "Jobabo", "Majibacoa", "Manatí", "Puerto Padre", "Las Tunas"],
+  "Holguín": ["Antilla", "Báguanos", "Banes", "Cacocum", "Calixto García", "Cueto", "Frank País", "Gibara", "Holguín", "Mayarí", "Moa", "Rafael Freyre", "Sagua de Tánamo", "Urbano Noris"],
+  "Granma": ["Bartolomé Masó", "Bayamo", "Buey Arriba", "Campechuela", "Cauto Cristo", "Guisa", "Jiguaní", "Manzanillo", "Media Luna", "Niquero", "Pilón", "Río Cauto", "Yara"],
+  "Santiago de Cuba": ["Contramaestre", "Guamá", "Mella", "Palma Soriano", "San Luis", "Santiago de Cuba", "Segundo Frente", "Songo - La Maya", "Tercer Frente"],
+  "Guantánamo": ["Baracoa", "Caimanera", "El Salvador", "Guantánamo", "Imías", "Maisí", "Manuel Tames", "Niceto Pérez", "San Antonio del Sur", "Yateras"],
+  "Municipio Especial Isla de la Juventud": ["Isla de la Juventud"]
+};
 
-class Resultados {
-  final double esferaA, esferaB, esferaC, esferaD, promedio;
-  final String diagnostico;
-  Resultados(this.esferaA, this.esferaB, this.esferaC, this.esferaD, this.promedio, this.diagnostico);
+// --- MODELO DE DATOS ---
+class DatosUsuario {
+  String nombre;
+  int edad;
+  String sexo;
+  String provincia;
+  String municipio;
+  String grupo;
+
+  DatosUsuario({
+    this.nombre = '',
+    this.edad = 15,
+    this.sexo = '',
+    this.provincia = '',
+    this.municipio = '',
+    this.grupo = '',
+  });
 }
 
-// --- PANTALLA 1: BIENVENIDA ---
-
-class PantallaBienvenida extends StatelessWidget {
+// --- PANTALLA 1: BIENVENIDA Y DATOS SOCIODEMOGRÁFICOS ---
+class PantallaBienvenida extends StatefulWidget {
   const PantallaBienvenida({super.key});
+
+  @override
+  State<PantallaBienvenida> createState() => _PantallaBienvenidaState();
+}
+
+class _PantallaBienvenidaState extends State<PantallaBienvenida> {
+  final _formKey = GlobalKey<FormState>();
+  final DatosUsuario datos = DatosUsuario();
+
+  String? provinciaSeleccionada;
+  String? municipioSeleccionado;
+  List<String> municipiosDisponibles = [];
+
+  final List<String> opcionesSexo = ["Femenino", "Masculino"];
 
   @override
   Widget build(BuildContext context) {
@@ -46,56 +96,163 @@ class PantallaBienvenida extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.blue.shade300, Colors.blue.shade50],
+            colors: [Colors.blue.shade100, Colors.white],
           ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.psychology_alt, size: 100, color: Colors.white),
-            const SizedBox(height: 20),
-            const Text(
-              "Test de Bienestar (EBES-JC)",
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40, vertical: 10),
-              child: Text(
-                "Este test ayudará a comprender tu estado emocional actual. Responde con sinceridad.",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.black87),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  const Icon(Icons.psychology_alt, size: 80, color: Color(0xFF4A90E2)),
+                  const SizedBox(height: 10),
+                  const Text(
+                    "Test de Bienestar",
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
+                  ),
+                  const Text(
+                    "(EBES-JC)",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 15),
+                  const Text(
+                    "Este test ayudará a comprender tu estado emocional actual. Responde con sinceridad.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 15, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 25),
+
+                  // FORMULARIO
+                  Card(
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextFormField(
+                            decoration: const InputDecoration(
+                              labelText: "Nombre (Opcional)",
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                            onSaved: (val) => datos.nombre = val?.trim() ?? '',
+                          ),
+                          const SizedBox(height: 15),
+                          TextFormField(
+                            decoration: const InputDecoration(
+                              labelText: "Edad (15 - 25 años) *",
+                              prefixIcon: Icon(Icons.cake_outlined),
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (val) {
+                              if (val == null || val.isEmpty) return "Indique su edad";
+                              final n = int.tryParse(val);
+                              if (n == null || n < 15 || n > 25) return "Rango válido: 15 a 25 años";
+                              return null;
+                            },
+                            onSaved: (val) => datos.edad = int.parse(val!),
+                          ),
+                          const SizedBox(height: 15),
+                          DropdownButtonFormField<String>(
+                            decoration: const InputDecoration(
+                              labelText: "Sexo *",
+                              prefixIcon: Icon(Icons.wc_outlined),
+                            ),
+                            items: opcionesSexo.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                            validator: (val) => val == null ? "Seleccione sexo" : null,
+                            onChanged: (val) => datos.sexo = val ?? '',
+                          ),
+                          const SizedBox(height: 15),
+                          DropdownButtonFormField<String>(
+                            decoration: const InputDecoration(
+                              labelText: "Provincia *",
+                              prefixIcon: Icon(Icons.map_outlined),
+                            ),
+                            value: provinciaSeleccionada,
+                            items: cubaGeo.keys.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
+                            validator: (val) => val == null ? "Seleccione provincia" : null,
+                            onChanged: (val) {
+                              setState(() {
+                                provinciaSeleccionada = val;
+                                datos.provincia = val ?? '';
+                                municipiosDisponibles = cubaGeo[val] ?? [];
+                                municipioSeleccionado = null;
+                                datos.municipio = '';
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 15),
+                          DropdownButtonFormField<String>(
+                            decoration: const InputDecoration(
+                              labelText: "Municipio *",
+                              prefixIcon: Icon(Icons.location_city_outlined),
+                            ),
+                            value: municipioSeleccionado,
+                            items: municipiosDisponibles.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+                            validator: (val) => val == null ? "Seleccione municipio" : null,
+                            onChanged: (val) {
+                              setState(() {
+                                municipioSeleccionado = val;
+                                datos.municipio = val ?? '';
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 15),
+                          TextFormField(
+                            decoration: const InputDecoration(
+                              labelText: "Grupo o Escuela (Opcional)",
+                              prefixIcon: Icon(Icons.school_outlined),
+                            ),
+                            onSaved: (val) => datos.grupo = val?.trim() ?? '',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 25),
+
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4A90E2),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    ),
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        _formKey.currentState!.save();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => PantallaTest(datos: datos)),
+                        );
+                      }
+                    },
+                    child: const Text("Comenzar Test", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-              ),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PantallaTest()),
-              ),
-              child: const Text("Comenzar Test", style: TextStyle(fontSize: 18)),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-// --- PANTALLA 2: EL TEST ---
-
+// --- PANTALLA 2: EL TEST (20 PREGUNTAS) ---
 class PantallaTest extends StatefulWidget {
-  const PantallaTest({super.key});
+  final DatosUsuario datos;
+  const PantallaTest({super.key, required this.datos});
 
   @override
   State<PantallaTest> createState() => _PantallaTestState();
 }
 
 class _PantallaTestState extends State<PantallaTest> {
-  int indicePregunta = 0;
+  int indice = 0;
   List<int> respuestas = [];
 
   final List<String> preguntas = [
@@ -109,7 +266,7 @@ class _PantallaTestState extends State<PantallaTest> {
     "Tengo personas de confianza en quienes puedo apoyarme ante cualquier dificultad.",
     "Siento que mi familia me brinda un ambiente de aceptación.",
     "Mis amigos me motivan a ser una mejor persona.",
-    "Encuentro formas creativas de resolver mis necesidades a pesar de las limitaciones de servicios (agua, electricidad, etc.).",
+    "Encuentro formas creativas de resolver mis necesidades a pesar de las limitaciones de servicios (agua, luz, etc.).",
     "Me siento capaz de organizar mis estudios o proyectos aun con las dificultades del entorno.",
     "Soy capaz de administrar mis recursos (dinero, comida, tiempo) con éxito.",
     "Puedo ajustar mis planes cuando surgen imprevistos en los servicios.",
@@ -121,7 +278,7 @@ class _PantallaTestState extends State<PantallaTest> {
     "Veo un camino posible para alcanzar la estabilidad que deseo.",
   ];
 
-  final List<String> escalaTexto = ["Nunca", "Rara vez", "A veces", "Frecuentemente", "Siempre"];
+  final List<String> opciones = ["Nunca", "Rara vez", "A veces", "Frecuentemente", "Siempre"];
 
   @override
   void initState() {
@@ -131,23 +288,21 @@ class _PantallaTestState extends State<PantallaTest> {
 
   void responder(int valor) {
     setState(() {
-      respuestas[indicePregunta] = valor;
-      if (indicePregunta < preguntas.length - 1) {
-        indicePregunta++;
+      respuestas[indice] = valor;
+      if (indice < preguntas.length - 1) {
+        indice++;
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => PantallaResultados(respuestas: respuestas)),
+          MaterialPageRoute(builder: (context) => PantallaResultados(datos: widget.datos, respuestas: respuestas)),
         );
       }
     });
   }
 
-  void retrocederPregunta() {
-    if (indicePregunta > 0) {
-      setState(() {
-        indicePregunta--;
-      });
+  void retroceder() {
+    if (indice > 0) {
+      setState(() => indice--);
     } else {
       Navigator.pop(context);
     }
@@ -155,55 +310,47 @@ class _PantallaTestState extends State<PantallaTest> {
 
   @override
   Widget build(BuildContext context) {
-    double progreso = (indicePregunta + 1) / preguntas.length;
+    double progreso = (indice + 1) / preguntas.length;
 
-    // PopScope intercepta el botón físico/gesto 'Atrás' propio de Android
     return PopScope(
-      canPop: indicePregunta == 0,
+      canPop: indice == 0,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && indicePregunta > 0) {
-          retrocederPregunta();
-        }
+        if (!didPop && indice > 0) retroceder();
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text("Pregunta ${indicePregunta + 1}/${preguntas.length}"),
+          title: Text("Pregunta ${indice + 1}/${preguntas.length}"),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            tooltip: indicePregunta > 0 ? "Pregunta anterior" : "Volver",
-            onPressed: retrocederPregunta,
+            onPressed: retroceder,
           ),
         ),
         body: Column(
           children: [
-            LinearProgressIndicator(value: progreso, minHeight: 10),
+            LinearProgressIndicator(value: progreso, minHeight: 8),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
+                padding: const EdgeInsets.all(20),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Card(
                       elevation: 4,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       child: Padding(
-                        padding: const EdgeInsets.all(22.0),
+                        padding: const EdgeInsets.all(22),
                         child: Text(
-                          preguntas[indicePregunta],
+                          preguntas[indice],
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+                          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w500),
                         ),
                       ),
                     ),
                     const SizedBox(height: 25),
-                    const Text(
-                      "¿Con qué frecuencia esto ocurre?",
-                      style: TextStyle(color: Colors.grey, fontSize: 15),
-                    ),
+                    const Text("¿Con qué frecuencia ocurre esto?", style: TextStyle(color: Colors.grey, fontSize: 15)),
                     const SizedBox(height: 15),
-                    ...List.generate(5, (index) {
-                      final int valorOpcion = index + 1;
-                      final bool seleccionada = respuestas[indicePregunta] == valorOpcion;
+                    ...List.generate(5, (i) {
+                      final valorOpcion = i + 1;
+                      final seleccionada = respuestas[indice] == valorOpcion;
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 5),
@@ -214,14 +361,14 @@ class _PantallaTestState extends State<PantallaTest> {
                               backgroundColor: seleccionada ? Colors.blue.shade100 : null,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               side: BorderSide(
-                                color: seleccionada ? Colors.blue : Colors.blue.shade200,
+                                color: seleccionada ? const Color(0xFF4A90E2) : Colors.blue.shade200,
                                 width: seleccionada ? 2.0 : 1.0,
                               ),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             onPressed: () => responder(valorOpcion),
                             child: Text(
-                              escalaTexto[index],
+                              opciones[i],
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: seleccionada ? FontWeight.bold : FontWeight.normal,
@@ -243,23 +390,32 @@ class _PantallaTestState extends State<PantallaTest> {
   }
 }
 
-// --- PANTALLA 3: RESULTADOS ---
-
-class PantallaResultados extends StatelessWidget {
+// --- PANTALLA 3: RESULTADOS, GOOGLE SHEETS & COMPARTIR ---
+class PantallaResultados extends StatefulWidget {
+  final DatosUsuario datos;
   final List<int> respuestas;
-  const PantallaResultados({super.key, required this.respuestas});
+
+  const PantallaResultados({super.key, required this.datos, required this.respuestas});
 
   @override
-  Widget build(BuildContext context) {
-    double sA = (respuestas[0] + respuestas[1] + respuestas[2] + respuestas[3] + respuestas[4]).toDouble();
-    double sB = (respuestas[5] + respuestas[6] + respuestas[7] + respuestas[8] + respuestas[9]).toDouble();
-    double sC = (respuestas[10] + respuestas[11] + respuestas[12] + respuestas[13] + respuestas[14]).toDouble();
-    double sD = (respuestas[15] + respuestas[16] + respuestas[17] + respuestas[18] + respuestas[19]).toDouble();
+  State<PantallaResultados> createState() => _PantallaResultadosState();
+}
 
-    double promedio = (sA + sB + sC + sD) / 20;
+class _PantallaResultadosState extends State<PantallaResultados> {
+  late double sA, sB, sC, sD, promedio;
+  late String diag;
+  late Color colorDiag;
 
-    String diag = "";
-    Color colorDiag = Colors.green;
+  @override
+  void initState() {
+    super.initState();
+    // Cálculo de esferas
+    sA = widget.respuestas.sublist(0, 5).reduce((a, b) => a + b).toDouble();
+    sB = widget.respuestas.sublist(5, 10).reduce((a, b) => a + b).toDouble();
+    sC = widget.respuestas.sublist(10, 15).reduce((a, b) => a + b).toDouble();
+    sD = widget.respuestas.sublist(15, 20).reduce((a, b) => a + b).toDouble();
+    promedio = (sA + sB + sC + sD) / 20;
+
     if (promedio < 2.5) {
       diag = "Requiere atención inmediata. Se observa bajo bienestar.";
       colorDiag = Colors.red;
@@ -271,46 +427,152 @@ class PantallaResultados extends StatelessWidget {
       colorDiag = Colors.green;
     }
 
+    _enviarAGoogleSheets();
+  }
+
+  // Envío a Google Sheets en segundo plano
+  Future<void> _enviarAGoogleSheets() async {
+    if (webhookGoogle.contains("TU_SCRIPT")) return;
+    try {
+      final body = {
+        "fecha": DateTime.now().toLocal().toString().split('.')[0],
+        "nombre": widget.datos.nombre.isEmpty ? "No proporcionado" : widget.datos.nombre,
+        "edad": widget.datos.edad,
+        "sexo": widget.datos.sexo,
+        "provincia": widget.datos.provincia,
+        "municipio": widget.datos.municipio,
+        "grupo": widget.datos.grupo.isEmpty ? "N/A" : widget.datos.grupo,
+        "promedio": promedio.toStringAsFixed(2),
+        "diagnostico": diag,
+        "esferaA": sA.toStringAsFixed(1),
+        "esferaB": sB.toStringAsFixed(1),
+        "esferaC": sC.toStringAsFixed(1),
+        "esferaD": sD.toStringAsFixed(1),
+        "respuestas": widget.respuestas.join(", ")
+      };
+
+      await http.post(
+        Uri.parse(webhookGoogle),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(body),
+      );
+    } catch (_) {}
+  }
+
+  String _generarMensajeCompartir() {
+    return '''📊 RESULTADOS TEST DE BIENESTAR (EBES-JC)
+👤 Nombre: ${widget.datos.nombre.isEmpty ? 'Anónimo' : widget.datos.nombre}
+🎂 Edad: ${widget.datos.edad} años | Sexo: ${widget.datos.sexo}
+📍 Ubicación: ${widget.datos.municipio}, ${widget.datos.provincia}
+🏫 Grupo/Escuela: ${widget.datos.grupo.isEmpty ? 'N/A' : widget.datos.grupo}
+⭐ Promedio: ${promedio.toStringAsFixed(2)} / 5.0
+📋 Diagnóstico: $diag
+
+📈 Desglose por Esferas:
+• Bienestar Emocional (A): ${sA.toStringAsFixed(1)}/25
+• Apoyo Social (B): ${sB.toStringAsFixed(1)}/25
+• Adaptación al Contexto (C): ${sC.toStringAsFixed(1)}/25
+• Proyección Futuro (D): ${sD.toStringAsFixed(1)}/25''';
+  }
+
+  Future<void> _compartirWhatsApp() async {
+    final msg = Uri.encodeComponent(_generarMensajeCompartir());
+    final url = Uri.parse("https://api.whatsapp.com/send?text=$msg");
+    await launchUrl(url, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _compartirTelegram() async {
+    final msg = Uri.encodeComponent(_generarMensajeCompartir());
+    final url = Uri.parse("https://t.me/share/url?url=&text=$msg");
+    await launchUrl(url, mode: LaunchMode.externalApplication);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Resultados")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const Icon(Icons.assignment_turned_in, size: 80, color: Colors.blue),
-            const SizedBox(height: 20),
+            const Icon(Icons.assignment_turned_in, size: 75, color: Color(0xFF4A90E2)),
+            const SizedBox(height: 15),
             Text(
               "Tu Promedio: ${promedio.toStringAsFixed(2)}",
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 15),
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: colorDiag.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: colorDiag),
+                color: colorDiag.withAlpha(25),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: colorDiag, width: 1.5),
               ),
               child: Text(
                 diag,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, color: colorDiag, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 16, color: colorDiag, fontWeight: FontWeight.bold),
               ),
             ),
-            const SizedBox(height: 30),
-            const Text("Desglose por Esferas:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 25),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text("Desglose por Esferas:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
             const SizedBox(height: 10),
             _itemResultado("Bienestar Emocional", sA),
             _itemResultado("Apoyo Social", sB),
             _itemResultado("Adaptación al Contexto", sC),
             _itemResultado("Proyección Futuro", sD),
-            const SizedBox(height: 30),
-            ElevatedButton(
+            const SizedBox(height: 25),
+
+            // BOTONES PARA COMPARTIR
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.chat),
+                label: const Text("Compartir por WhatsApp", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                onPressed: _compartirWhatsApp,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0088CC),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.send),
+                label: const Text("Compartir por Telegram", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                onPressed: _compartirTelegram,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            OutlinedButton(
               onPressed: () => Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const PantallaBienvenida()),
               ),
               child: const Text("Reiniciar Test"),
+            ),
+            const SizedBox(height: 20),
+
+            // AVISO LEGAL
+            const Text(
+              "Si duda sobre su resultado converse con un profesional de la salud mental. El resultado es orientativo y no constituye un diagnóstico.",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
         ),
@@ -320,8 +582,9 @@ class PantallaResultados extends StatelessWidget {
 
   Widget _itemResultado(String titulo, double valor) {
     return ListTile(
-      title: Text(titulo),
-      trailing: Text(valor.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold)),
+      dense: true,
+      title: Text(titulo, style: const TextStyle(fontWeight: FontWeight.w500)),
+      trailing: Text(valor.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
     );
   }
 }

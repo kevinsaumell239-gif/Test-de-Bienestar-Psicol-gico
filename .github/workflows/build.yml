@@ -1,62 +1,46 @@
-name: Compilar y Firmar APK
+name: ebes_jc
+description: "Modelado automatizado de pulsiones psicológicas y evaluación del bienestar en la juventud cubana (EBES-JC)."
 
-on:
-  workflow_dispatch:
+# Evita que el paquete se publique accidentalmente en pub.dev
+publish_to: 'none'
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Descargar codigo del repositorio
-        uses: actions/checkout@v4
+# Define la versión de la aplicación: versión semántica + número de compilación
+version: 1.0.0+1
 
-      - name: Instalar Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
+environment:
+  sdk: '>=3.0.0 <4.0.0'
 
-      - name: Instalar Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
+dependencies:
+  flutter:
+    sdk: flutter
 
-      - name: Crear proyecto, configurar permisos de Internet y nombre
-        run: |
-          flutter create --org com.bienestar --project-name test_bienestar mi_app
-          cp main.dart mi_app/lib/main.dart
-          
-          # 1. Cambiar nombre visible
-          sed -i 's/android:label="mi_app"/android:label="Test de Bienestar"/g' mi_app/android/app/src/main/AndroidManifest.xml
-          
-          # 2. Agregar Permiso de INTERNET a Android
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>' mi_app/android/app/src/main/AndroidManifest.xml
+  # Iconos de estilo iOS (estándar en proyectos Flutter)
+  cupertino_icons: ^1.0.6
 
-          cd mi_app
-          # Instalar paquetes requeridos
-          flutter pub add http url_launcher
+  # Para el envío de telemetría a Google Sheets (Apps Script)
+  http: ^1.2.0
 
-      - name: Compilar APK en Release
-        run: |
-          cd mi_app
-          flutter build apk --release
+  # Para abrir enlaces de WhatsApp, Telegram y recursos de ayuda
+  url_launcher: ^6.3.0
 
-      - name: Generar Keystore y Firmar APK
-        run: |
-          keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 2048 -validity 10000 \
-            -alias bienestar -storepass MiPasswordSeguro123 -keypass MiPasswordSeguro123 \
-            -dname "CN=Kevin Saumell, OU=Psicologia, O=Bienestar, L=La Habana, C=CU"
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
 
-          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
-            --ks release.jks \
-            --ks-key-alias bienestar \
-            --ks-pass pass:MiPasswordSeguro123 \
-            --key-pass pass:MiPasswordSeguro123 \
-            --out mi_app/build/app/outputs/flutter-apk/TestDeBienestar-Firmada.apk \
-            mi_app/build/app/outputs/flutter-apk/app-release.apk
+  # Guía de buenas prácticas de código para Flutter
+  flutter_lints: ^3.0.0
 
-      - name: Subir APK Firmada
-        uses: actions/upload-artifact@v4
-        with:
-          name: TestDeBienestar-Firmada
-          path: mi_app/build/app/outputs/flutter-apk/TestDeBienestar-Firmada.apk
+flutter:
+  # Habilita el uso de Material Design 3 (usado en el código Dart)
+  uses-material-design: true
+
+  # Si en el futuro agregas imágenes o fuentes, se registran aquí:
+  # assets:
+  #   - assets/images/logo_cujae.png
+
+  # fonts:
+  #   - family: Roboto
+  #     fonts:
+  #       - asset: fonts/Roboto-Regular.ttf
+  #       - asset: fonts/Roboto-Bold.ttf
+  #         weight: 700

@@ -1,46 +1,26 @@
-name: ebes_jc
-description: "Modelado automatizado de pulsiones psicológicas y evaluación del bienestar en la juventud cubana (EBES-JC)."
+name: Flutter Build
 
-# Evita que el paquete se publique accidentalmente en pub.dev
-publish_to: 'none'
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
-# Define la versión de la aplicación: versión semántica + número de compilación
-version: 1.0.0+1
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-environment:
-  sdk: '>=3.0.0 <4.0.0'
+    steps:
+      - uses: actions/checkout@v4
 
-dependencies:
-  flutter:
-    sdk: flutter
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0' # O la versión que uses
+          channel: 'stable'
 
-  # Iconos de estilo iOS (estándar en proyectos Flutter)
-  cupertino_icons: ^1.0.6
+      - name: Install dependencies
+        run: flutter pub get
 
-  # Para el envío de telemetría a Google Sheets (Apps Script)
-  http: ^1.2.0
-
-  # Para abrir enlaces de WhatsApp, Telegram y recursos de ayuda
-  url_launcher: ^6.3.0
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-
-  # Guía de buenas prácticas de código para Flutter
-  flutter_lints: ^3.0.0
-
-flutter:
-  # Habilita el uso de Material Design 3 (usado en el código Dart)
-  uses-material-design: true
-
-  # Si en el futuro agregas imágenes o fuentes, se registran aquí:
-  # assets:
-  #   - assets/images/logo_cujae.png
-
-  # fonts:
-  #   - family: Roboto
-  #     fonts:
-  #       - asset: fonts/Roboto-Regular.ttf
-  #       - asset: fonts/Roboto-Bold.ttf
-  #         weight: 700
+      - name: Build APK
+        run: flutter build apk --release

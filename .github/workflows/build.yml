@@ -20,9 +20,19 @@ jobs:
 
       - name: Crear estructura nativa de Flutter
         run: |
-          # Esto genera las carpetas 'android' y archivos Gradle que faltan
           flutter create --platforms android .
-          
+
+      # 🔴 ESTE PASO ASEGURA QUE EL PERMISO DE INTERNET ESTÉ EN ANDROIDMANIFEST.XML
+      - name: Asegurar permiso de Internet en Android
+        run: |
+          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          if grep -q "android.permission.INTERNET" "$MANIFEST_PATH"; then
+            echo "El permiso de Internet ya existe."
+          else
+            echo "Inyectando permiso de Internet..."
+            sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST_PATH"
+          fi
+
       - name: Instalar dependencias
         run: flutter pub get
 

@@ -466,52 +466,45 @@ class _PantallaResultadosState extends State<PantallaResultados> {
     return valores.reduce((a, b) => a + b) / valores.length;
   }
 
-    // Envío a Google Sheets robusto para Android
+      // Envío a Google Sheets compatible con tu Apps Script original
   Future<void> _enviarAGoogleSheets() async {
     if (webhookGoogle.contains("TU_SCRIPT")) return;
     try {
       final uri = Uri.parse(webhookGoogle);
       
+      // Mantenemos exactamente las mismas claves JSON de la versión antigua
+      // para que tu Google Sheets las reciba y guarde sin rechazar nada.
       final body = {
         "fecha": DateTime.now().toLocal().toString().split('.')[0],
-        "nombre": widget.datos.nombre.isEmpty ? "Anónimo" : widget.datos.nombre,
+        "nombre": widget.datos.nombre.isEmpty ? "No proporcionado" : widget.datos.nombre,
         "edad": widget.datos.edad,
         "sexo": widget.datos.sexo,
         "provincia": widget.datos.provincia,
         "municipio": widget.datos.municipio,
         "grupo": widget.datos.grupo.isEmpty ? "N/A" : widget.datos.grupo,
         "promedio": promedio.toStringAsFixed(2),
-        "nivel_orientativo": nivelOrientativo,
-        "esferaA": sA.toStringAsFixed(2),
-        "esferaB": sB.toStringAsFixed(2),
-        "esferaC": sC.toStringAsFixed(2),
-        "esferaD": sD.toStringAsFixed(2),
-        "seguridad_s1": widget.respuestasSeguridad[0],
-        "seguridad_s2": widget.respuestasSeguridad[1],
-        "alerta_seguridad": alertaSeguridad ? "CRITICA_ACTIVADA" : "NORMAL",
-        "respuestas": [...widget.respuestas, ...widget.respuestasSeguridad].join(",")
+        "diagnostico": nivelOrientativo, // Clave original que espera tu script
+        "esferaA": sA.toStringAsFixed(1),
+        "esferaB": sB.toStringAsFixed(1),
+        "esferaC": sC.toStringAsFixed(1),
+        "esferaD": sD.toStringAsFixed(1),
+        // Adjuntamos las respuestas completas (incluyendo seguridad) en la misma cadena de texto
+        "respuestas": [
+          ...widget.respuestas.map((r, i) => MapEntry(i, itemsPuntuables[i].invertido ? 6 - r : r)).values,
+          ...widget.respuestasSeguridad
+        ].join(", ")
       };
 
-      // Usamos un cliente HTTP con seguimiento explícito o POST estándar
-      final response = await http.post(
+      await http.post(
         uri,
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
+        headers: {"Content-Type": "application/json"},
         body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 15));
-
-      // Si Google Apps Script responde con una redirección típica (302) o éxito (200/201)
-      if (response.statusCode == 200 || response.statusCode == 302 || response.statusCode == 303) {
-        debugPrint("Telemetría enviada con éxito desde Android.");
-      } else {
-        debugPrint("Fallo en telemetría Android: Código ${response.statusCode}");
-      }
+      );
     } catch (e) {
-      debugPrint("Excepción al enviar telemetría en Android: $e");
+      debugPrint("Error al enviar telemetría: $e");
     }
   }
+
 
 
   String _generarMensajeCompartir() {

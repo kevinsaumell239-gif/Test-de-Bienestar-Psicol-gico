@@ -466,42 +466,53 @@ class _PantallaResultadosState extends State<PantallaResultados> {
     return valores.reduce((a, b) => a + b) / valores.length;
   }
 
+    // Envío a Google Sheets robusto para Android
   Future<void> _enviarAGoogleSheets() async {
-    if (webhookGoogle.contains('TU_SCRIPT')) return;
+    if (webhookGoogle.contains("TU_SCRIPT")) return;
     try {
-      final payload = {
-        'fecha': DateTime.now().toLocal().toString().split('.').first,
-        'nombre': widget.datos.nombre.isEmpty ? 'No proporcionado' : widget.datos.nombre,
-        'edad': widget.datos.edad,
-        'sexo': widget.datos.sexo,
-        'provincia': widget.datos.provincia,
-        'municipio': widget.datos.municipio,
-        'grupo': widget.datos.grupo.isEmpty ? 'N/A' : widget.datos.grupo,
-        'promedio': promedio.toStringAsFixed(2),
-        'nivel_orientativo': nivelOrientativo,
-        'esferaA': sA.toStringAsFixed(2),
-        'esferaB': sB.toStringAsFixed(2),
-        'esferaC': sC.toStringAsFixed(2),
-        'esferaD': sD.toStringAsFixed(2),
-        'seguridad_s1': widget.respuestasSeguridad[0],
-        'seguridad_s2': widget.respuestasSeguridad[1],
-        'alerta_seguridad': alertaSeguridad ? 'CRITICA_ACTIVADA' : 'NORMAL',
-        'respuestas': [...widget.respuestas, ...widget.respuestasSeguridad].join(','),
+      final uri = Uri.parse(webhookGoogle);
+      
+      final body = {
+        "fecha": DateTime.now().toLocal().toString().split('.')[0],
+        "nombre": widget.datos.nombre.isEmpty ? "Anónimo" : widget.datos.nombre,
+        "edad": widget.datos.edad,
+        "sexo": widget.datos.sexo,
+        "provincia": widget.datos.provincia,
+        "municipio": widget.datos.municipio,
+        "grupo": widget.datos.grupo.isEmpty ? "N/A" : widget.datos.grupo,
+        "promedio": promedio.toStringAsFixed(2),
+        "nivel_orientativo": nivelOrientativo,
+        "esferaA": sA.toStringAsFixed(2),
+        "esferaB": sB.toStringAsFixed(2),
+        "esferaC": sC.toStringAsFixed(2),
+        "esferaD": sD.toStringAsFixed(2),
+        "seguridad_s1": widget.respuestasSeguridad[0],
+        "seguridad_s2": widget.respuestasSeguridad[1],
+        "alerta_seguridad": alertaSeguridad ? "CRITICA_ACTIVADA" : "NORMAL",
+        "respuestas": [...widget.respuestas, ...widget.respuestasSeguridad].join(",")
       };
 
+      // Usamos un cliente HTTP con seguimiento explícito o POST estándar
       final response = await http.post(
-        Uri.parse(webhookGoogle),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(payload),
-      ).timeout(const Duration(seconds: 20));
+        uri,
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 15));
 
-      if (response.statusCode < 200 || response.statusCode >= 400) {
-        debugPrint('No se confirmó el envío a Google Sheets: HTTP ${response.statusCode}');
+      // Si Google Apps Script responde con una redirección típica (302) o éxito (200/201)
+      if (response.statusCode == 200 || response.statusCode == 302 || response.statusCode == 303) {
+        debugPrint("Telemetría enviada con éxito desde Android.");
+      } else {
+        debugPrint("Fallo en telemetría Android: Código ${response.statusCode}");
       }
-    } catch (error) {
-      debugPrint('Error al enviar resultados a Google Sheets: $error');
+    } catch (e) {
+      debugPrint("Excepción al enviar telemetría en Android: $e");
     }
   }
+
 
   String _generarMensajeCompartir() {
     return '''RESULTADOS TEST DE BIENESTAR (EBES-JC)

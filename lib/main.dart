@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 // Sustituye esta URL si cambia la implementación de Apps Script.
 const String webhookGoogle =
-    'https://script.google.com/macros/s/AKfycbw1ah4mIX7pOgdyj7t0mVTMBWULACaMh3PNIl4-2qs8VteWobQN5061DhvqAA1HijtDcA/exec';
+    'https://script.google.com/macros/s/AKfycbwr3xVzgjN158KliKvpsTWUf85De_6V9d8VdbZ3SA4iRzUgGYPSkkeJORErwpy3tagBjg/exec';
 
 void main() {
   runApp(const TestPsicologicoApp());
